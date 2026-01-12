@@ -1,3 +1,6 @@
+Q/E Naik turun kamera
+A/D Gerak kiri kanan kamera
+W/S Maju Mundur Kamera
 N/M scale roket
 B/K scale pohon natal
 Y/Z naik turun roket

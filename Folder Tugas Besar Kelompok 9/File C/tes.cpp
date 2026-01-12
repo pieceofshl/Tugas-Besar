@@ -29,7 +29,7 @@ float nozzle          = 1.0f;
 // Scaling & Position Variables
 float scalePohon      = 1.5f;
 float scaleRocket     = 0.8f;
-float rocketAltitude  = 3.8f; // [BARU] Ketinggian roket dari pusat bulan
+float rocketAltitude  = 3.8f;
 
 // Lighting State
 bool isSunLightOn = true;
@@ -333,6 +333,10 @@ void drawUFO() {
 
     glDisable(GL_TEXTURE_2D);
     GLfloat no_emission[] = { 0, 0, 0, 1 };
+    
+    // [BARU] Warna emisi biru untuk dome
+    GLfloat dome_emission[] = { 0.2f, 0.4f, 1.0f, 1.0f }; 
+
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
     // Body
@@ -351,7 +355,7 @@ void drawUFO() {
     glutSolidSphere(1.0, 50, 50);
     glPopMatrix();
 
-    // Lights
+    // Lights Ring
     GLfloat light_emission[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat light_off[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     glMaterialfv(GL_FRONT, GL_EMISSION, light_emission);
@@ -368,7 +372,7 @@ void drawUFO() {
     }
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
-    // Dome
+    // Dome (Kubah Kaca)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLfloat glass_ambient[] = { 0.0f, 0.1f, 0.5f, 0.5f };
@@ -378,10 +382,17 @@ void drawUFO() {
     glMaterialfv(GL_FRONT, GL_SPECULAR, ufo_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, ufo_shine);
 
+    // [BARU] Aktifkan emisi biru sebelum menggambar dome
+    glMaterialfv(GL_FRONT, GL_EMISSION, dome_emission);
+
     glPushMatrix();
     glTranslatef(0.0f, 0.25f, 0.0f);
     glutSolidSphere(0.7f, 50, 50);
     glPopMatrix();
+
+    // [BARU] Matikan emisi setelah menggambar dome
+    glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
+
     glDisable(GL_BLEND);
 
     // Antenna & Beam
