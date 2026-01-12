@@ -606,7 +606,7 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
-    glutCreateWindow("TUGAS BESAR KELOMPOK 8");
+    glutCreateWindow("TUGAS BESAR KELOMPOK 9");
     glewInit();
 
     glEnable(GL_DEPTH_TEST);
