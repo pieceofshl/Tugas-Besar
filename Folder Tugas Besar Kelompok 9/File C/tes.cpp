@@ -9,58 +9,58 @@
 
 using namespace std;
 
-// ================= GLOBAL VARIABLES =================
+// ================= VARIABEL GLOBAL =================
 
-// Texture IDs
+// ID Tekstur
 GLuint texture_bulan_ID;
 GLuint texture_bumi_ID;
 GLuint texture_matahari_ID;
 
-// Animation & Rotation Variables
-float rotasiBulan     = 0.0f;
-float rotasiBumi      = 0.0f;
-float rotasiMatahari  = 0.0f;
-float orbitBulan      = 0.0f;
-float orbitBumi       = 0.0f;
-float orbitUFO        = 0.0f;
-float rotasiUFO       = 0.0f;
-float nozzle          = 1.0f;
+// Variabel Animasi & Rotasi
+float rotasiBulan    = 0.0f;
+float rotasiBumi     = 0.0f;
+float rotasiMatahari = 0.0f;
+float orbitBulan     = 0.0f;
+float orbitBumi      = 0.0f;
+float orbitUFO       = 0.0f;
+float rotasiUFO      = 0.0f;
+float nozzle         = 1.0f;
 
-// Scaling & Position Variables
-float scalePohon      = 1.5f;
-float scaleRocket     = 0.8f;
-float rocketAltitude  = 3.8f;
+// Variabel Skala & Posisi
+float scalePohon     = 1.5f;
+float scaleRocket    = 0.8f;
+float rocketAltitude = 3.8f; // Ketinggian roket dari pusat bulan
 
-// Lighting State
+// Status Pencahayaan
 bool isSunLightOn = true;
 
-// Object Distances & Positions
-float jarakBumi       = 0.0f;
-float jarakMatahari   = -60.0f;
-float jarakOrbitUFO   = 5.0f;
+// Jarak & Posisi Objek
+float jarakBumi     = 0.0f;   // Posisi Pusat (Center)
+float jarakMatahari = -60.0f; // Offset Matahari
+float jarakOrbitUFO = 5.0f;
 
-// Lighting Configuration
+// Konfigurasi Pencahayaan
 GLfloat light_position[] = { 80.0, 0.0, 0.0, 1.0 };
 GLfloat light_ambient[]  = { 0.15, 0.15, 0.15, 1.0 };
 GLfloat light_diffuse[]  = { 1.0, 1.0, 0.9, 1.0 };
 GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 
-// Camera Variables (Free Cam)
-float freeCamPosX   = 0.0f;
-float freeCamPosY   = 5.0f;
-float freeCamPosZ   = 15.0f;
-float freeCamYaw    = 0.0f;
-float freeCamPitch  = 0.0f;
-float freeCamSpeed  = 0.5f;
+// Variabel Kamera (Kamera Bebas)
+float freeCamPosX  = 0.0f;
+float freeCamPosY  = 5.0f;
+float freeCamPosZ  = 15.0f;
+float freeCamYaw   = 0.0f;
+float freeCamPitch = 0.0f;
+float freeCamSpeed = 0.5f;
 
-// Input States
+// Status Input
 bool keyW = false, keyA = false, keyS = false, keyD = false;
 bool keyQ = false, keyE = false;
-bool mouseLeftDown  = false;
-int mouseLastX      = 0;
-int mouseLastY      = 0;
+bool mouseLeftDown = false;
+int mouseLastX     = 0;
+int mouseLastY     = 0;
 
-// Star System
+// Sistem Bintang
 struct Star {
     float x, y, z;
     float r, g, b;
@@ -72,7 +72,7 @@ struct Star {
 const int NUM_STARS = 2000;
 Star stars[NUM_STARS];
 
-// ================= INITIALIZATION & HELPER FUNCTIONS =================
+// ================= INISIALISASI & FUNGSI PEMBANTU =================
 
 void initStars() {
     srand(time(NULL));
@@ -104,23 +104,23 @@ GLuint loadTexture(const char* path) {
     glGenTextures(1, &textureID);
     FREE_IMAGE_FORMAT format = FreeImage_GetFIFFromFilename(path);
     if (format == FIF_UNKNOWN) return 0;
-    
+
     FIBITMAP* bitmap = FreeImage_Load(format, path, 0);
     if (!bitmap) return 0;
-    
+
     FIBITMAP* bitmap2 = FreeImage_ConvertTo24Bits(bitmap);
     FreeImage_Unload(bitmap);
-    
+
     int w = FreeImage_GetWidth(bitmap2);
     int h = FreeImage_GetHeight(bitmap2);
-    
+
     glBindTexture(GL_TEXTURE_2D, textureID);
     int formatColor = (FI_RGBA_RED == 0) ? GL_RGB : GL_BGR;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, formatColor, GL_UNSIGNED_BYTE, FreeImage_GetBits(bitmap2));
-    
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
+
     FreeImage_Unload(bitmap2);
     return textureID;
 }
@@ -133,7 +133,7 @@ void createObject(float radius) {
     gluDeleteQuadric(object);
 }
 
-// ================= DRAWING FUNCTIONS =================
+// ================= FUNGSI MENGGAMBAR =================
 
 void drawStars() {
     glDisable(GL_LIGHTING);
@@ -164,7 +164,7 @@ void drawRocket() {
 
     GLUquadric* quad = gluNewQuadric();
 
-    // 1. Nozzle
+    // 1. Nosel (Corong)
     glColor3f(0.3f, 0.3f, 0.3f);
     glPushMatrix();
     glRotatef(-90, 1, 0, 0);
@@ -172,7 +172,7 @@ void drawRocket() {
     gluDisk(quad, 0.0, 0.5, 30, 1);
     glPopMatrix();
 
-    // 2. Body
+    // 2. Badan Roket
     glColor3f(1.0f, 1.0f, 1.0f);
     glPushMatrix();
     glTranslatef(0.0f, 0.6f, 0.0f);
@@ -181,7 +181,7 @@ void drawRocket() {
     gluDisk(quad, 0.0, 0.6, 30, 1);
     glPopMatrix();
 
-    // 3. Fins
+    // 3. Sirip
     glColor3f(0.9f, 0.1f, 0.1f);
     for (int i = 0; i < 4; i++) {
         glPushMatrix();
@@ -200,7 +200,7 @@ void drawRocket() {
         glPopMatrix();
     }
 
-    // 4. Nose
+    // 4. Hidung
     glColor3f(0.9f, 0.1f, 0.1f);
     glPushMatrix();
     glTranslatef(0.0f, 2.8f, 0.0f);
@@ -208,7 +208,7 @@ void drawRocket() {
     glutSolidCone(0.52, 1.2, 30, 30);
     glPopMatrix();
 
-    // 5. Thruster
+    // 5. Api Pendorong
     glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(0.0f, -0.2f, 0.0f);
@@ -232,7 +232,7 @@ void drawTree() {
     glDisable(GL_TEXTURE_2D);
     glScalef(scalePohon, scalePohon, scalePohon);
 
-    // Trunk
+    // Batang
     glColor3f(0.55f, 0.27f, 0.07f);
     glPushMatrix();
     glRotatef(-90, 1, 0, 0);
@@ -242,11 +242,11 @@ void drawTree() {
     gluDeleteQuadric(quad);
     glPopMatrix();
 
-    // Leaves
+    // Daun
     glColor3f(0.42f, 0.69f, 0.18f);
     float coneHeights[] = { 1.5f, 1.4f, 1.2f };
-    float coneBase[] = { 1.8f, 1.4f, 0.9f };
-    float yPos[] = { 0.8f, 1.8f, 2.7f };
+    float coneBase[]    = { 1.8f, 1.4f, 0.9f };
+    float yPos[]        = { 0.8f, 1.8f, 2.7f };
 
     for (int i = 0; i < 3; i++) {
         glPushMatrix();
@@ -256,7 +256,7 @@ void drawTree() {
         glPopMatrix();
     }
 
-    // Decoration
+    // Dekorasi Tali
     glDisable(GL_LIGHTING);
     glLineWidth(3.0f);
     glBegin(GL_LINE_STRIP);
@@ -271,7 +271,7 @@ void drawTree() {
     glEnd();
     glLineWidth(1.0f);
 
-    // Ornaments
+    // Ornamen Bola
     struct Ball { float x, y, z, r, g, b; };
     Ball ornaments[] = {
         {0.9f, 1.2f, 0.8f, 1.0f, 0.0f, 0.0f},
@@ -291,7 +291,7 @@ void drawTree() {
         glPopMatrix();
     }
 
-    // Star
+    // Bintang di Pucuk
     glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(0.0f, 3.9f, 0.0f);
@@ -319,7 +319,7 @@ void drawTree() {
 void drawUFO() {
     glPushMatrix();
 
-    // Hierarchical Transformation: Sun -> Earth -> Moon -> UFO
+    // Transformasi Hirarki: Matahari -> Bumi -> Bulan -> UFO
     glTranslatef(jarakMatahari, 0.0, -20.0);
     glRotatef(orbitBumi, 0.0, 1.0, 0.0);
     glTranslatef(60.0, 0.0, 0.0);
@@ -333,17 +333,15 @@ void drawUFO() {
 
     glDisable(GL_TEXTURE_2D);
     GLfloat no_emission[] = { 0, 0, 0, 1 };
-    
-    // [BARU] Warna emisi biru untuk dome
-    GLfloat dome_emission[] = { 0.2f, 0.4f, 1.0f, 1.0f }; 
+    GLfloat dome_emission[] = { 0.2f, 0.4f, 1.0f, 1.0f }; // Warna emisi biru
 
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
-    // Body
-    GLfloat ufo_ambient[] = { 0.3f, 0.0f, 0.3f, 1.0f };
-    GLfloat ufo_diffuse[] = { 0.6f, 0.1f, 0.8f, 1.0f };
+    // Badan UFO
+    GLfloat ufo_ambient[]  = { 0.3f, 0.0f, 0.3f, 1.0f };
+    GLfloat ufo_diffuse[]  = { 0.6f, 0.1f, 0.8f, 1.0f };
     GLfloat ufo_specular[] = { 0.9f, 0.9f, 1.0f, 1.0f };
-    GLfloat ufo_shine[] = { 80.0f };
+    GLfloat ufo_shine[]    = { 80.0f };
 
     glMaterialfv(GL_FRONT, GL_AMBIENT, ufo_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, ufo_diffuse);
@@ -355,9 +353,9 @@ void drawUFO() {
     glutSolidSphere(1.0, 50, 50);
     glPopMatrix();
 
-    // Lights Ring
+    // Lampu Cincin
     GLfloat light_emission[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat light_off[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    GLfloat light_off[]      = { 0.0f, 0.0f, 0.0f, 1.0f };
     glMaterialfv(GL_FRONT, GL_EMISSION, light_emission);
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, light_off);
 
@@ -372,7 +370,7 @@ void drawUFO() {
     }
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
-    // Dome (Kubah Kaca)
+    // Kubah Kaca (Dome)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLfloat glass_ambient[] = { 0.0f, 0.1f, 0.5f, 0.5f };
@@ -382,7 +380,7 @@ void drawUFO() {
     glMaterialfv(GL_FRONT, GL_SPECULAR, ufo_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, ufo_shine);
 
-    // [BARU] Aktifkan emisi biru sebelum menggambar dome
+    // Aktifkan emisi biru untuk kubah
     glMaterialfv(GL_FRONT, GL_EMISSION, dome_emission);
 
     glPushMatrix();
@@ -390,12 +388,12 @@ void drawUFO() {
     glutSolidSphere(0.7f, 50, 50);
     glPopMatrix();
 
-    // [BARU] Matikan emisi setelah menggambar dome
+    // Matikan emisi
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
     glDisable(GL_BLEND);
 
-    // Antenna & Beam
+    // Antena & Sorotan
     glMaterialfv(GL_FRONT, GL_AMBIENT, ufo_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, ufo_diffuse);
     glMaterialfv(GL_FRONT, GL_SHININESS, ufo_shine);
@@ -439,7 +437,7 @@ void drawUFO() {
     glPopMatrix();
 }
 
-// ================= PLANETARY DRAWING FUNCTIONS =================
+// ================= FUNGSI MENGGAMBAR PLANET =================
 
 void drawMatahari() {
     glPushMatrix();
@@ -466,7 +464,7 @@ void drawMatahari() {
 
 void drawBumi() {
     glPushMatrix();
-    // Hierarchical: Sun -> Earth
+    // Transformasi Hirarki: Matahari -> Bumi
     glTranslatef(jarakMatahari, 0.0, -20.0);
     glRotatef(orbitBumi, 0.0, 1.0, 0.0);
     glTranslatef(60.0, 0.0, 0.0);
@@ -477,7 +475,7 @@ void drawBumi() {
     glBindTexture(GL_TEXTURE_2D, texture_bumi_ID);
     createObject(6.0);
 
-    // Tree on Earth
+    // Pohon Natal di Bumi
     glPushMatrix();
     glTranslatef(0.0f, 6.0f, 0.0f);
     drawTree();
@@ -488,7 +486,7 @@ void drawBumi() {
 
 void drawBulan() {
     glPushMatrix();
-    // Hierarchical: Sun -> Earth -> Moon
+    // Transformasi Hirarki: Matahari -> Bumi -> Bulan
     glTranslatef(jarakMatahari, 0.0, -20.0);
     glRotatef(orbitBumi, 0.0, 1.0, 0.0);
     glTranslatef(60.0, 0.0, 0.0);
@@ -502,10 +500,9 @@ void drawBulan() {
     glBindTexture(GL_TEXTURE_2D, texture_bulan_ID);
     createObject(3.0);
 
-    // Rocket on Moon
+    // Roket di Bulan
     glPushMatrix();
-    // [EDIT] Ubah Y menggunakan variabel rocketAltitude
-    glTranslatef(0.0f, rocketAltitude, 0.0f); 
+    glTranslatef(0.0f, rocketAltitude, 0.0f);
     drawRocket();
     glPopMatrix();
 
@@ -513,7 +510,7 @@ void drawBulan() {
 }
 
 // ==========================================
-//           INPUT & UPDATE LOGIC
+//           FUNGSI INPUT & UPDATE
 // ==========================================
 
 void updateCamera() {
@@ -551,7 +548,7 @@ void keyboard(unsigned char key, int x, int y) {
     if (key == 'n' || key == 'N') scaleRocket += 0.1f;
     if (key == 'm' || key == 'M') { scaleRocket -= 0.1f; if (scaleRocket < 0.1f) scaleRocket = 0.1f; }
 
-    // [BARU] Logika Roket Terbang
+    // Logika Roket Terbang
     if (key == 'y' || key == 'Y') rocketAltitude += 0.1f;
     if (key == 'z' || key == 'Z') { rocketAltitude -= 0.1f; if (rocketAltitude < 3.0f) rocketAltitude = 3.0f; }
 
