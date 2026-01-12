@@ -9,6 +9,7 @@
 
 using namespace std;
 
+// ================= GLOBAL VARIABLES =================
 
 // Texture IDs
 GLuint texture_bulan_ID;
@@ -25,9 +26,10 @@ float orbitUFO        = 0.0f;
 float rotasiUFO       = 0.0f;
 float nozzle          = 1.0f;
 
-// Scaling Variables
+// Scaling & Position Variables
 float scalePohon      = 1.5f;
 float scaleRocket     = 0.8f;
+float rocketAltitude  = 3.8f; // [BARU] Ketinggian roket dari pusat bulan
 
 // Lighting State
 bool isSunLightOn = true;
@@ -230,7 +232,7 @@ void drawTree() {
     glDisable(GL_TEXTURE_2D);
     glScalef(scalePohon, scalePohon, scalePohon);
 
-    // batang
+    // Trunk
     glColor3f(0.55f, 0.27f, 0.07f);
     glPushMatrix();
     glRotatef(-90, 1, 0, 0);
@@ -240,7 +242,7 @@ void drawTree() {
     gluDeleteQuadric(quad);
     glPopMatrix();
 
-    // Daun
+    // Leaves
     glColor3f(0.42f, 0.69f, 0.18f);
     float coneHeights[] = { 1.5f, 1.4f, 1.2f };
     float coneBase[] = { 1.8f, 1.4f, 0.9f };
@@ -254,7 +256,7 @@ void drawTree() {
         glPopMatrix();
     }
 
-    // Dekorasi
+    // Decoration
     glDisable(GL_LIGHTING);
     glLineWidth(3.0f);
     glBegin(GL_LINE_STRIP);
@@ -269,7 +271,7 @@ void drawTree() {
     glEnd();
     glLineWidth(1.0f);
 
-    // Ornamen
+    // Ornaments
     struct Ball { float x, y, z, r, g, b; };
     Ball ornaments[] = {
         {0.9f, 1.2f, 0.8f, 1.0f, 0.0f, 0.0f},
@@ -289,7 +291,7 @@ void drawTree() {
         glPopMatrix();
     }
 
-    // Hiasan Bintang
+    // Star
     glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(0.0f, 3.9f, 0.0f);
@@ -367,7 +369,20 @@ void drawUFO() {
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
     // Dome
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GLfloat glass_ambient[] = { 0.0f, 0.1f, 0.5f, 0.5f };
+    GLfloat glass_diffuse[] = { 0.1f, 0.2f, 0.8f, 0.5f };
+    glMaterialfv(GL_FRONT, GL_AMBIENT, glass_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, glass_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, ufo_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, ufo_shine);
 
+    glPushMatrix();
+    glTranslatef(0.0f, 0.25f, 0.0f);
+    glutSolidSphere(0.7f, 50, 50);
+    glPopMatrix();
+    glDisable(GL_BLEND);
 
     // Antenna & Beam
     glMaterialfv(GL_FRONT, GL_AMBIENT, ufo_ambient);
@@ -478,7 +493,8 @@ void drawBulan() {
 
     // Rocket on Moon
     glPushMatrix();
-    glTranslatef(0.0f, 3.8f, 0.0f);
+    // [EDIT] Ubah Y menggunakan variabel rocketAltitude
+    glTranslatef(0.0f, rocketAltitude, 0.0f); 
     drawRocket();
     glPopMatrix();
 
@@ -523,6 +539,10 @@ void keyboard(unsigned char key, int x, int y) {
 
     if (key == 'n' || key == 'N') scaleRocket += 0.1f;
     if (key == 'm' || key == 'M') { scaleRocket -= 0.1f; if (scaleRocket < 0.1f) scaleRocket = 0.1f; }
+
+    // [BARU] Logika Roket Terbang
+    if (key == 'y' || key == 'Y') rocketAltitude += 0.1f;
+    if (key == 'z' || key == 'Z') { rocketAltitude -= 0.1f; if (rocketAltitude < 3.0f) rocketAltitude = 3.0f; }
 
     if (key == 'w' || key == 'W') keyW = true;
     if (key == 's' || key == 'S') keyS = true;
