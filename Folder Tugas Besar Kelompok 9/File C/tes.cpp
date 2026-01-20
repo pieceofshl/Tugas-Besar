@@ -1,22 +1,17 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <FreeImage.h>
-#include <stdio.h>
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>
 
-using namespace std;
 
-// ================= VARIABEL GLOBAL =================
-
-// ID Tekstur
+// ID Tekstur. Note: Variabel buat ngasih texture ke bulan, bumi, matahari.
 GLuint texture_bulan_ID;
 GLuint texture_bumi_ID;
 GLuint texture_matahari_ID;
 
-// Variabel Animasi & Rotasi
+// Variabel Animasi & Rotasi. Note: Tanpa variabel-variabel ini, objek yang ada akan diam mematung.
 float rotasiBulan    = 0.0f;
 float rotasiBumi     = 0.0f;
 float rotasiMatahari = 0.0f;
@@ -24,70 +19,75 @@ float orbitBulan     = 0.0f;
 float orbitBumi      = 0.0f;
 float orbitUFO       = 0.0f;
 float rotasiUFO      = 0.0f;
-float nozzle         = 1.0f;
+float nozzle         = 0.0f;
 
-// Variabel Skala & Posisi
+// Variabel Skala & Posisi. Note: Berfungsi untuk mengatur ukuran atau scalling dan posisi vertikal objek Ketika pertamakali dijalankan.
 float scalePohon     = 1.5f;
-float scaleRocket    = 0.8f;
-float rocketAltitude = 3.8f; // Ketinggian roket dari pusat bulan
+float scaleRocket    = 1.0f;
+const float ROCKET_SCALE_MIN = 0.5f; // batas minimal untuk ukuran scale roket
+const float ROCKET_SCALE_MAX = 3.0f; // batas maksimal untuk ukuran scale roket
+const float ROCKET_FLY_MIN = 5.0f; 
+const float ROCKET_FLY_MAX = 20.0f; 
+float rocketAltitude = 5.0f; // Ketinggian roket dari dasar bulan
 
-// Status Pencahayaan
-bool isSunLightOn = true;
+// Status Pencahayaan. Note: logika untuk menyalakan atau mematikan cahaya Matahari.
+bool isSunLightOn = true; // Kalo diganti false ketika program pertama kali dijalankan, mataharinya akan mati.
 
-// Jarak & Posisi Objek
-float jarakBumi     = 0.0f;   // Posisi Pusat (Center)
-float jarakMatahari = -60.0f; // Offset Matahari
-float jarakOrbitUFO = 5.0f;
+// Jarak & Posisi Objek. Note: Berfungsi untuk mengatur tata letak dan koordinat objek-objek.
+float jarakMatahari = 0.0f; //  Biar posisi mataharinya ada di tengah-tengah.
+float jarakOrbitUFO = 5.0f; // Ngatur jarak UFO ketika mengorbit bulan.
 
-// Konfigurasi Pencahayaan
-GLfloat light_position[] = { 80.0, 0.0, 0.0, 1.0 };
-GLfloat light_ambient[]  = { 0.15, 0.15, 0.15, 1.0 };
-GLfloat light_diffuse[]  = { 1.0, 1.0, 0.9, 1.0 };
-GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+// Konfigurasi Pencahayaan. Note: Memecah cahaya menjadi tiga komponen (Ambient, Diffuse, Specular) ditambah Posisi.
+GLfloat light_position[] = { 0.0, 0.0, 0.0, 1.0 };
+GLfloat light_ambient[]  = { 0.0, 0.0, 0.0, 1.0 }; // Buat ngasih efek gelap di objek yang tidak terkena matahari.
+GLfloat light_diffuse[]  = { 1.0, 1.0, 0.9, 1.0 }; // Buat ngatur warna cahaya matahari ke objek di sekitarnya.
+GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 }; // Buat bikin efek mengkilap di objek.
 
-// Variabel Kamera (Kamera Bebas)
-float freeCamPosX  = 0.0f;
-float freeCamPosY  = 5.0f;
-float freeCamPosZ  = 15.0f;
-float freeCamYaw   = 0.0f;
-float freeCamPitch = 0.0f;
-float freeCamSpeed = 0.5f;
+// Variabel Kamera (Free Cam)
+float freeCamPosX  = 0.0f;       // Posisi kamera berada tepat ditengah secara horizontal.
+float freeCamPosY  = 10.0f;      // Posisi kamera agak atasan dikit secara vertikal.
+float freeCamPosZ  = 130.0f;    // Biar kamera gak terlalu dekat dengan matahari.
+float freeCamYaw   = 180.0f;     // Biar bisa geleng-geleng kamera.
+float freeCamPitch = 0.0f;       // Biar kamera bisa ngangguk.
+float freeCamSpeed = 0.5f;       // Ngatur seberapa cepat kamera bergerak setiap kali tombol ditekan.
 
-// Status Input
+// Status Input. Note: Niru program yang diajarin di materi.
 bool keyW = false, keyA = false, keyS = false, keyD = false;
 bool keyQ = false, keyE = false;
+bool isPaused = false; // ini buat ngePaused semua benda agar diam
 bool mouseLeftDown = false;
 int mouseLastX     = 0;
 int mouseLastY     = 0;
 
 // Sistem Bintang
-struct Star {
-    float x, y, z;
-    float r, g, b;
-    float brightness;
-    float pulseSpeed;
-    float pulsePhase;
-    float size;
+struct Star {             // Buat bikin bintang harus pake ini.
+    float x, y, z;        // Menaruh bintang diruang 3D dan disebar secara acak, agar terlihat natural.
+    float r, g, b;        // Variabel RGB si bintangnya.
+    float brightness;     // Variabel buat ngatur tingkat kecerahan bintang.
+    float pulseSpeed;     // Variabel buat bikin kelap-kelip (agak rumit jelasinnya).
+    float pulsePhase;     // Variabel buat bikin kelap-kelip (agak rumit jelasinnya).
+    float size;           // Ukuran bintangnya.
 };
-const int NUM_STARS = 2000;
+const int NUM_STARS = 1000;   // Jumlah bintang yang ada
 Star stars[NUM_STARS];
 
 // ================= INISIALISASI & FUNGSI PEMBANTU =================
 
 void initStars() {
-    srand(time(NULL));
-    for (int i = 0; i < NUM_STARS; i++) {
-        stars[i].x = (rand() % 400 - 200) * 1.0f;
-        stars[i].y = (rand() % 400 - 200) * 1.0f;
-        stars[i].z = (rand() % 400 - 200) * 1.0f;
-        stars[i].brightness = 0.5 + (rand() % 50) / 100.0f;
-        stars[i].pulseSpeed = 0.5 + (rand() % 100) / 100.0f;
-        stars[i].pulsePhase = rand() % 100 / 100.0f * 2 * M_PI;
-        stars[i].size = 1.0 + (rand() % 10) / 10.0f;
-        stars[i].r = 0.8f; stars[i].g = 0.8f; stars[i].b = 1.0f;
+    srand(time(NULL));                      // Membuat posisi acak untuk bintang setiap kali di run.
+    for (int i = 0; i < NUM_STARS; i++) {   // Looping
+        stars[i].x = (rand() % 400 - 200) * 1.0f;     // menciptakan kubus raksasa berukuran 400x400x400 satuan, dengan titik pusat (0,0,0). Bintang disebar merata di dalam kotak ini.
+        stars[i].y = (rand() % 400 - 200) * 1.0f;     // menciptakan kubus raksasa berukuran 400x400x400 satuan, dengan titik pusat (0,0,0). Bintang disebar merata di dalam kotak ini.
+        stars[i].z = (rand() % 400 - 200) * 1.0f;     // menciptakan kubus raksasa berukuran 400x400x400 satuan, dengan titik pusat (0,0,0). Bintang disebar merata di dalam kotak ini.
+        stars[i].brightness = 1.0 + (rand() % 50) / 100.0f;        // Ngatur tingkat kecerahan bintang disini (tapi ga bisa lebih dari 1.0 kayaknya)
+        stars[i].pulseSpeed = 0.5 + (rand() % 100) / 100.0f;       // Ngatur biar kedipnya ga barengan (ngatur kecepatan kedipannya)
+        stars[i].pulsePhase = rand() % 100 / 100.0f * 2 * M_PI;    // Ngatur biar kedipnya ga barengan (ngatur kapan mulai kedipnya)
+        stars[i].size = 1.0 + (rand() % 10) / 10.0f;               // Bikin ukuran bintang yang bervariasi
+        stars[i].r = 0.7f; stars[i].g = 0.7f; stars[i].b = 1.0f;   // Ganti warna bintang disini.
     }
 }
 
+// Ngatur pencahayaan yang tadi udah dipanggil di atas
 void setupLighting() {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -95,21 +95,22 @@ void setupLighting() {
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_COLOR_MATERIAL);                         // Kalo ini dihapus objeknya bakal jadi flat atau satu warna doang
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 }
 
+// Buat menghubungkan file gambar (di program ini pake format .png) ke OpenGL
 GLuint loadTexture(const char* path) {
     GLuint textureID;
     glGenTextures(1, &textureID);
-    FREE_IMAGE_FORMAT format = FreeImage_GetFIFFromFilename(path);
-    if (format == FIF_UNKNOWN) return 0;
+    FREE_IMAGE_FORMAT format = FreeImage_GetFIFFromFilename(path);  // Melihat nama file (misal bumi.png). 
+    if (format == FIF_UNKNOWN) return 0;                            // Jika file tidak dikenali, batalkan (return 0).
 
-    FIBITMAP* bitmap = FreeImage_Load(format, path, 0);
-    if (!bitmap) return 0;
+    FIBITMAP* bitmap = FreeImage_Load(format, path, 0);             // Membaca data gambar dari SSD/HSS dan memuatnya ke dalam RAM.
+    if (!bitmap) return 0;                                          // Jika file rusak atau tidak ada, batalkan.
 
-    FIBITMAP* bitmap2 = FreeImage_ConvertTo24Bits(bitmap);
-    FreeImage_Unload(bitmap);
+    FIBITMAP* bitmap2 = FreeImage_ConvertTo24Bits(bitmap);          // Memaksa mengubah semua gambar menjadi format standar 24-bit RGB (gambar bisa macam-macam formatnya ada yang 16-bit, 32-bit, transparan, grayscale, dll).
+    FreeImage_Unload(bitmap);                                       // Data asli yang mentah dihapus untuk menghemat memori, kita pakai yang standar (bitmap2) saja.
 
     int w = FreeImage_GetWidth(bitmap2);
     int h = FreeImage_GetHeight(bitmap2);
@@ -118,45 +119,54 @@ GLuint loadTexture(const char* path) {
     int formatColor = (FI_RGBA_RED == 0) ? GL_RGB : GL_BGR;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, formatColor, GL_UNSIGNED_BYTE, FreeImage_GetBits(bitmap2));
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);  // Menentukan bagaimana gambar terlihat saat di-zoom in atau di-zoom out. Menginstruksikan OpenGL untuk memperhalus pixel jika gambar pecah.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  // Menentukan bagaimana gambar terlihat saat di-zoom in atau di-zoom out. Menginstruksikan OpenGL untuk memperhalus pixel jika gambar pecah.
 
     FreeImage_Unload(bitmap2);
     return textureID;
 }
 
 void createObject(float radius) {
-    GLUquadric* object = gluNewQuadric();
-    gluQuadricTexture(object, GL_TRUE);
-    gluQuadricNormals(object, GLU_SMOOTH);
-    gluSphere(object, radius, 100, 100);
+    GLUquadric* object = gluNewQuadric();        // Pembuat objek melengkung
+    gluQuadricTexture(object, GL_TRUE);          // Biar Tekstur bisa nempel rapi di objek bola.
+    gluQuadricNormals(object, GLU_SMOOTH);       // Buat ngatur Pantulan Cahaya.
+    gluSphere(object, radius, 100, 100);         //Buat ngatur resolusi objek bola. Makin kecil makin burik.
     gluDeleteQuadric(object);
 }
 
 // ================= FUNGSI MENGGAMBAR =================
 
+// Bintang
 void drawStars() {
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glPointSize(2.0f);
+	
+    glDisable(GL_LIGHTING); 
+
+    glEnable(GL_BLEND); 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPointSize(2.0f);  // buat ngatur ukuran bintangnya.
 
     glBegin(GL_POINTS);
+    
     static float time = 0.0f;
-    time += 0.01f;
+    time += 0.07f; // Percepat sedikit biar lebih kelihatan
+
     for (int i = 0; i < NUM_STARS; i++) {
-        float pulse = 0.7f + 0.3f * sin(time * stars[i].pulseSpeed + stars[i].pulsePhase);
+        // Rumus kedip
+        float pulse = 0.5f + 0.5f * sin(time * stars[i].pulseSpeed + stars[i].pulsePhase);
+        
+        // Warna
         glColor4f(stars[i].r, stars[i].g, stars[i].b, stars[i].brightness * pulse);
+        
         glVertex3f(stars[i].x, stars[i].y, stars[i].z);
     }
     glEnd();
 
-    glDisable(GL_BLEND);
-    glEnable(GL_LIGHTING);
-    glEnable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);    // Matiin blendingnya (biar planet gak kedip-kedip)
+    glEnable(GL_LIGHTING);  // Nyalain lagi lighting (Biar planet punya bayangan)
 }
 
+// Roket 
 void drawRocket() {
     glPushMatrix();
     glDisable(GL_TEXTURE_2D);
@@ -227,6 +237,7 @@ void drawRocket() {
     glPopMatrix();
 }
 
+// Pohon Natal
 void drawTree() {
     glPushMatrix();
     glDisable(GL_TEXTURE_2D);
@@ -316,6 +327,7 @@ void drawTree() {
     glPopMatrix();
 }
 
+// UFO
 void drawUFO() {
     glPushMatrix();
 
@@ -370,17 +382,8 @@ void drawUFO() {
     }
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
-    // Kubah Kaca (Dome)
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    GLfloat glass_ambient[] = { 0.0f, 0.1f, 0.5f, 0.5f };
-    GLfloat glass_diffuse[] = { 0.1f, 0.2f, 0.8f, 0.5f };
-    glMaterialfv(GL_FRONT, GL_AMBIENT, glass_ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, glass_diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, ufo_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, ufo_shine);
 
-    // Aktifkan emisi biru untuk kubah
+    // Cahaya Biru di kaca UFO
     glMaterialfv(GL_FRONT, GL_EMISSION, dome_emission);
 
     glPushMatrix();
@@ -388,7 +391,7 @@ void drawUFO() {
     glutSolidSphere(0.7f, 50, 50);
     glPopMatrix();
 
-    // Matikan emisi
+    // Biar Antenanya ga biru
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
 
     glDisable(GL_BLEND);
@@ -407,7 +410,7 @@ void drawUFO() {
     gluDeleteQuadric(antennaObj);
     glPopMatrix();
     glTranslatef(0.0f, 0.4f, 0.0f);
-    GLfloat tip_color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    GLfloat tip_color[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tip_color);
     glutSolidSphere(0.05, 16, 16);
     glPopMatrix();
@@ -422,7 +425,7 @@ void drawUFO() {
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glBegin(GL_TRIANGLE_FAN);
+    glBegin(GL_TRIANGLE_FAN);  //Lampu sorot di badan UFO
     glColor4f(0.4f, 0.8f, 1.0f, 0.5f); glVertex3f(0.0f, -0.2f, 0.0f);
     glColor4f(0.4f, 0.8f, 1.0f, 0.0f);
     for (int i = 0; i <= 360; i += 20) {
@@ -439,6 +442,7 @@ void drawUFO() {
 
 // ================= FUNGSI MENGGAMBAR PLANET =================
 
+// Matahari
 void drawMatahari() {
     glPushMatrix();
     glTranslatef(jarakMatahari, 0.0, -20.0);
@@ -462,9 +466,9 @@ void drawMatahari() {
     glPopMatrix();
 }
 
+// Bumi
 void drawBumi() {
     glPushMatrix();
-    // Transformasi Hirarki: Matahari -> Bumi
     glTranslatef(jarakMatahari, 0.0, -20.0);
     glRotatef(orbitBumi, 0.0, 1.0, 0.0);
     glTranslatef(60.0, 0.0, 0.0);
@@ -476,17 +480,17 @@ void drawBumi() {
     createObject(6.0);
 
     // Pohon Natal di Bumi
-    glPushMatrix();
-    glTranslatef(0.0f, 6.0f, 0.0f);
-    drawTree();
+    glPushMatrix();                  // Titik Start.
+    glTranslatef(0.0f, 6.0f, 0.0f);  // Biar pohon napak di atas permukaan bumi.
+    drawTree();                      // Buat memanggil bentuk pohon natalnya.
     glPopMatrix();
 
     glPopMatrix();
 }
 
+// Bulan
 void drawBulan() {
     glPushMatrix();
-    // Transformasi Hirarki: Matahari -> Bumi -> Bulan
     glTranslatef(jarakMatahari, 0.0, -20.0);
     glRotatef(orbitBumi, 0.0, 1.0, 0.0);
     glTranslatef(60.0, 0.0, 0.0);
@@ -501,9 +505,10 @@ void drawBulan() {
     createObject(3.0);
 
     // Roket di Bulan
-    glPushMatrix();
-    glTranslatef(0.0f, rocketAltitude, 0.0f);
-    drawRocket();
+    glPushMatrix();                                  // Titik Start juga
+    glTranslatef(0.0f, rocketAltitude, 0.0f);        // rocketAltitude digunakan karena ini adalah variabel yang nilainya bisa berubah-ubah (agar bisa terbang).
+    //glRotatef(-180.0f, 1, 0, 0);                   // ini untuk sewaktu-waktu dibutuhkan untuk ngerotate roket
+    drawRocket();                                    // Buat memanggil bentuk roketnyanya.
     glPopMatrix();
 
     glPopMatrix();
@@ -524,6 +529,7 @@ void updateCamera() {
     float rx = cos(yawRad);
     float rz = -sin(yawRad);
 
+    // Ngatur gerak kamera disini (
     if (keyW) { freeCamPosX += fx * freeCamSpeed; freeCamPosY += fy * freeCamSpeed; freeCamPosZ += fz * freeCamSpeed; }
     if (keyS) { freeCamPosX -= fx * freeCamSpeed; freeCamPosY -= fy * freeCamSpeed; freeCamPosZ -= fz * freeCamSpeed; }
     if (keyA) { freeCamPosX += rx * freeCamSpeed; freeCamPosZ += rz * freeCamSpeed; }
@@ -536,21 +542,31 @@ void updateCamera() {
               0.0, 1.0, 0.0);
 }
 
+// (Luthfi
 void keyboard(unsigned char key, int x, int y) {
     if (key == 'l' || key == 'L') {
         isSunLightOn = !isSunLightOn;
         if (isSunLightOn) glEnable(GL_LIGHT0); else glDisable(GL_LIGHT0);
     }
+     if (key == 'h' || key == 'H') {
+        isPaused = !isPaused;
+    }
 
     if (key == 'b' || key == 'B') scalePohon += 0.1f;
     if (key == 'k' || key == 'K') { scalePohon -= 0.1f; if (scalePohon < 0.1f) scalePohon = 0.1f; }
 
-    if (key == 'n' || key == 'N') scaleRocket += 0.1f;
-    if (key == 'm' || key == 'M') { scaleRocket -= 0.1f; if (scaleRocket < 0.1f) scaleRocket = 0.1f; }
+    if (key == 'm' || key == 'M') {scaleRocket += 0.1f;
+    if (scaleRocket > ROCKET_SCALE_MAX)scaleRocket = ROCKET_SCALE_MAX;}
+
+    if (key == 'n' || key == 'N') {scaleRocket -= 0.1f;
+    if (scaleRocket < ROCKET_SCALE_MIN) scaleRocket = ROCKET_SCALE_MIN;}
 
     // Logika Roket Terbang
-    if (key == 'y' || key == 'Y') rocketAltitude += 0.1f;
-    if (key == 'z' || key == 'Z') { rocketAltitude -= 0.1f; if (rocketAltitude < 3.0f) rocketAltitude = 3.0f; }
+    if (key == 'y' || key == 'Y') {rocketAltitude += 0.1f;
+    if (rocketAltitude > ROCKET_FLY_MAX) rocketAltitude = ROCKET_FLY_MAX;}
+    
+    if (key == 'z' || key == 'Z') {rocketAltitude -= 0.1f;
+    if (rocketAltitude < ROCKET_FLY_MIN) rocketAltitude = ROCKET_FLY_MIN;}
 
     if (key == 'w' || key == 'W') keyW = true;
     if (key == 's' || key == 'S') keyS = true;
@@ -599,16 +615,17 @@ void mouseMotion(int x, int y) {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-
-    rotasiBulan    += 0.05f;
-    rotasiBumi     += 0.05f;
-    rotasiMatahari += 0.01f;
+    
+    if(!isPaused){ // ini ketika klik h maka benda akan diam
+    rotasiBulan    += 0.09f;
+    rotasiBumi     += 0.09f;
+    rotasiMatahari += 0.09f;
     orbitUFO       += 1.0f;
     rotasiUFO      += 2.0f;
     nozzle         += 0.5f;
     orbitBulan     += 0.5f;
     orbitBumi      += 0.3f;
-
+    }
     updateCamera();
     drawStars();
     drawMatahari();
